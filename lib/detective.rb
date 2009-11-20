@@ -2,12 +2,7 @@ require 'ruby_parser'
 
 module Detective
 
-  begin
-    fork{exit!}
-    ForkSupported = true
-  rescue
-    ForkSupported = false
-  end
+  ForkSupported = respond_to? :fork
 
 	def self.view_source(method)
     location = get_location(method).strip.split /[\r\n]+/
