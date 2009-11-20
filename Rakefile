@@ -11,6 +11,8 @@ begin
     gem.homepage = "http://github.com/aseldawy/detective"
     gem.authors = ["Ahmed ElDawy"]
     gem.rubyforge_project = "detective"
+    gem.add_dependency('ruby_parser')
+
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new
