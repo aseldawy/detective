@@ -42,9 +42,11 @@ module Detective
       # instance method
       class_name, method_name = ruby_statement.split('#')
       class_method = false
-    else
+    elsif ruby_statement.index('.')
       class_name, method_name = ruby_statement.split('.')
       class_method = true
+    else
+      raise "Invalid parameter"
     end
     the_klass = eval(class_name)
     ForkSupported ? get_location_fork(the_klass, method_name, class_method) : get_location_thread(the_klass, method_name, class_method)
@@ -53,6 +55,11 @@ module Detective
 private
 
   def self.get_location_thread(the_klass, method_name, class_method)
+    if class_method
+      raise "Invalid class method name #{method_name} for class #{the_klass}" unless the_klass.respond_to? method_name
+    else
+      raise "Invalid instance method name #{method_name} for class #{the_klass}" unless the_klass.instance_methods.include? method_name
+    end
     result = ""
     t = Thread.new do
       # child process
@@ -83,7 +90,7 @@ private
         the_method.call *args
         # If the next line executed, this indicates an error because the method should be cancelled before called
         result << "method called!" << "\r\n"
-      rescue => e
+      rescue Exception => e
         result << "error" << "\r\n"
         result << e.inspect << "\r\n"
       end

@@ -85,7 +85,9 @@ class TestDetective < Test::Unit::TestCase
   end
 
   def test_undefined_method
-    source = Detective.view_source('String#adfasdf')
+    assert_raises RuntimeError do
+      Detective.view_source('String#adfasdf')
+    end
   end
 
   def test_using_threads
@@ -130,4 +132,10 @@ class TestDetective < Test::Unit::TestCase
     assert_equal 'Cannot find source code', source.gsub(/\s+/, ' ').strip
   end
   
+  def test_invalid_method_name
+    assert_raises RuntimeError do
+      Detective.view_source('BadrIT')
+    end
+  end
+
 end

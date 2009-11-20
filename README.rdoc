@@ -1,18 +1,74 @@
 = detective
 
-Description goes here.
+Detective is a gem build by BadrIT (http://www.badrit.com/) to investigate the ruby source code.
+Check the examples below.
 
-== Note on Patches/Pull Requests
- 
-* Fork the project.
-* Make your feature addition or bug fix.
-* Add tests for it. This is important so I don't break it in a
-  future version unintentionally.
-* Commit, do not mess with rakefile, version, or history.
-  (if you want to have your own version, that is fine but
-   bump version in a commit by itself I can ignore when I pull)
-* Send me a pull request. Bonus points for topic branches.
+== Motivation
+Tired of opening files of installed gems to know how the code is working?
+Not able to know who and where that function has been overrided?
+It's time to get help from a private Detective.
+Detective allows you show the source and find the location of some ruby method.
+
+== Examples
+View the source of a class method ...
+  require 'detective'
+  
+  Detective.view_source('ActiveRecord::Base.find_by_sql')
+  
+    def find_by_sql(sql)
+      connection.select_all(sanitize_sql(sql), "#{name} Load").collect! { |record| instantiate(record) }
+    end
+
+View the source of an instance method ...
+
+  Detective.view_source('ActiveRecord::Base#update_attributes')
+
+    def update_attributes(attributes)
+      self.attributes = attributes
+      save
+    end
+
+View the source of an overrided method ...
+  ActiveRecord::Base.class_eval do
+    def update_attributes(attributes)
+      puts "updating attributes ..."
+      self.attributes = attributes
+      save
+    end
+  end
+  
+  Detective.view_source('ActiveRecord::Base#update_attributes')
+    
+    def update_attributes(attributes)
+      puts "updating attributes ..."
+      self.attributes = attributes
+      save
+    end
+
+Find the location of some source ...
+  Detective.get_location('ActiveRecord::Base#attributes')
+
+    location
+    /home/aseldawy/.gem/ruby/1.8/gems/activerecord-2.3.4/lib/active_record/base.rb
+    2752
+
+No luck with native methods ...
+  Detective.view_source('String#length')
+  
+    native method
+
+== How it works (advanced)
+The idea is to invoke the given method and trace the execution of the program.
+This allows us to know where is the definition of the method.
+Then with the help of RubyParser, we can extract its code from the file.
+The invoke of this method is made in a separate process so that it doesn't conflict with your program.
+This child process is killed before the method starts its execution so the method is not really invoked.
+
+For systems not supporting fork (like windows), the child process is replaced with a thread.
+This might make some problems because it is running in the same space of your own ruby program.
+We make our best to decrease the effect of this call by killing the thread before the method starts execution.
+However, given that Detective will be used while developing only, we can ignore this effect.
 
 == Copyright
 
-Copyright (c) 2009 Ahmed ElDawy. See LICENSE for details.
+Copyright (c) 2009 BadrIT. See LICENSE for details.
