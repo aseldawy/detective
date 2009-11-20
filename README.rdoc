@@ -14,7 +14,8 @@ View the source of a class method ...
   require 'detective'
   
   Detective.view_source('ActiveRecord::Base.find_by_sql')
-  
+
+Result  
     def find_by_sql(sql)
       connection.select_all(sanitize_sql(sql), "#{name} Load").collect! { |record| instantiate(record) }
     end
@@ -23,6 +24,7 @@ View the source of an instance method ...
 
   Detective.view_source('ActiveRecord::Base#update_attributes')
 
+Result
     def update_attributes(attributes)
       self.attributes = attributes
       save
@@ -39,6 +41,7 @@ View the source of an overrided method ...
   
   Detective.view_source('ActiveRecord::Base#update_attributes')
     
+Result
     def update_attributes(attributes)
       puts "updating attributes ..."
       self.attributes = attributes
@@ -48,13 +51,15 @@ View the source of an overrided method ...
 Find the location of some source ...
   Detective.get_location('ActiveRecord::Base#attributes')
 
-    location
+Result
+    "location
     /home/aseldawy/.gem/ruby/1.8/gems/activerecord-2.3.4/lib/active_record/base.rb
-    2752
+    2752"
 
 No luck with native methods ...
   Detective.view_source('String#length')
-  
+
+Result
     native method
 
 == How it works (advanced)
