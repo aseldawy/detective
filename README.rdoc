@@ -9,6 +9,9 @@ Not able to know who and where that function has been overrided?
 It's time to get help from a private Detective.
 Detective allows you show the source and find the location of some ruby method.
 
+== Installation
+  gem install detective
+
 == Examples
 View the source of a class method ...
   require 'detective'

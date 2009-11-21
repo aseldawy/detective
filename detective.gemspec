@@ -5,12 +5,12 @@
 
 Gem::Specification.new do |s|
   s.name = %q{detective}
-  s.version = "0.1.0"
+  s.version = "0.2.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Ahmed ElDawy"]
-  s.date = %q{2009-11-20}
-  s.description = %q{A gem that allows you to view the source code of a method}
+  s.date = %q{2009-11-21}
+  s.description = %q{A ruby gem built by BadrIT (http://www.badrit.com/) that allows you to view the source code of a method}
   s.email = %q{ahmed.eldawy@badrit.com}
   s.extra_rdoc_files = [
     "LICENSE",
