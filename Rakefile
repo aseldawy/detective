@@ -6,7 +6,7 @@ begin
   Jeweler::Tasks.new do |gem|
     gem.name = "detective"
     gem.summary = "Find source code of ruby methods"
-    gem.description = "A gem that allows you to view the source code of a method"
+    gem.description = "A ruby gem built by BadrIT (http://www.badrit.com/) that allows you to view the source code of a method"
     gem.email = "ahmed.eldawy@badrit.com"
     gem.homepage = "http://github.com/aseldawy/detective"
     gem.authors = ["Ahmed ElDawy"]

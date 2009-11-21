@@ -1,15 +1,15 @@
 require 'helper'
 
-class BadrIT; end
+class BadrIT
+  def self.hello
+    puts "hello BadrIT"
+  end
+end
+module IPhone; end
+  
 
 class TestDetective < Test::Unit::TestCase
   def test_simple_method
-  	BadrIT.class_eval do 
-  		def self.hello
-				puts "hello BadrIT"
-			end
-		end
-  
     source = Detective.view_source('BadrIT.hello')
     assert_equal 'def self.hello puts "hello BadrIT" end', source.gsub(/\s+/, ' ').strip
   end
@@ -137,5 +137,20 @@ class TestDetective < Test::Unit::TestCase
       Detective.view_source('BadrIT')
     end
   end
+  
+  def test_moudle_source
+    IPhone.module_eval do
+      def app_store
+        puts "app_store!"
+      end
+    end
+    
+    source = Detective.view_source('IPhone#app_store')
+    assert_equal 'def app_store puts "app_store!" end', source.gsub(/\s+/, ' ').strip 
+  end
 
+  def test_rdoc_format
+    source = Detective.view_source('BadrIT.hello', :rdoc)
+    assert_equal "#{__FILE__}, line 4 4: def self.hello 5: puts \"hello BadrIT\" 6: end", source.gsub(/\s+/, ' ').strip
+  end
 end

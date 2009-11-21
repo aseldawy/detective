@@ -2,9 +2,14 @@ require 'ruby_parser'
 
 module Detective
 
-  ForkSupported = respond_to? :fork
+  begin
+    fork {exit!}
+    ForkSupported = true
+  rescue Exception
+    ForkSupported = false
+  end
 
-	def self.view_source(method)
+	def self.view_source(method, format=:plain)
     location = get_location(method).strip.split /[\r\n]+/
     case location.first
       when 'native method' then return 'native method'
@@ -15,19 +20,29 @@ module Detective
         line_no = line_no.to_i
         f = File.open filename
         source = ""
-        file_line_no = 0
+        output = case format
+          when :plain then ""
+          when :rdoc then "#{filename}, line #{line_no}" << "\r\n"
+          else ""
+        end
+        current_line_no = 0
         rp = RubyParser.new
-        f.each_line do |file_line|
-          file_line_no += 1
-          if file_line_no >= line_no
-            source << file_line
+        f.each_line do |current_line|
+          current_line_no += 1
+          if current_line_no >= line_no
+            output << case format
+              when :plain then current_line
+              when :rdoc then "#{current_line_no}:#{current_line}"
+              else current_line
+            end
+            source << current_line
             # Try to parse it to know whether the method is complete or not
             rp.parse(source) && break rescue nil
           end
         end
         f.close
-        return source
-      rescue
+        return output
+      rescue Exception => e
         return "Cannot find source code"
       end
     end
@@ -62,31 +77,31 @@ private
     end
     result = ""
     t = Thread.new do
-      # child process
-      detective_state = 0
-      # Get an instance of class Method that can be invoked using Method#call
-      the_method, args = get_method(the_klass, method_name, class_method)
-      set_trace_func(proc do |event, file, line, id, binding, classname|
-        if id == :call
-          detective_state = 1
-          return
-        end
-        return if detective_state == 0
-        if event == 'call'
-          result << "location" << "\r\n"
-          result << file << "\r\n"
-          result << line.to_s << "\r\n"
-          # Cancel debugging
-          set_trace_func nil
-          Thread.kill(Thread.current)
-        elsif event == 'c-call'
-          result << 'native method'
-          set_trace_func nil
-          Thread.kill(Thread.current)
-        end
-      end)
-
       begin
+        # child process
+        detective_state = 0
+        # Get an instance of class Method that can be invoked using Method#call
+        the_method, args = get_method(the_klass, method_name, class_method)
+        set_trace_func(proc do |event, file, line, id, binding, classname|
+          if id == :call
+            detective_state = 1
+            return
+          end
+          return if detective_state == 0
+          if event == 'call'
+            result << "location" << "\r\n"
+            result << file << "\r\n"
+            result << line.to_s << "\r\n"
+            # Cancel debugging
+            set_trace_func nil
+            Thread.kill(Thread.current)
+          elsif event == 'c-call'
+            result << 'native method'
+            set_trace_func nil
+            Thread.kill(Thread.current)
+          end
+        end)
+
         the_method.call *args
         # If the next line executed, this indicates an error because the method should be cancelled before called
         result << "method called!" << "\r\n"
@@ -102,30 +117,30 @@ private
   def self.get_location_fork(the_klass, method_name, class_method)
     f = open("|-", "w+")
     if f == nil
-      # child process
-      detective_state = 0
-      # Get an instance of class Method that can be invoked using Method#call
-      the_method, args = get_method(the_klass, method_name, class_method)
-      set_trace_func(proc do |event, file, line, id, binding, classname|
-        if id == :call
-          detective_state = 1
-          return
-        end
-        return if detective_state == 0
-        if event == 'call'
-          puts "location"
-          puts file
-          puts line
-          set_trace_func nil
-          exit!
-        elsif event == 'c-call'
-          puts 'native method'
-          set_trace_func nil
-          exit!
-        end
-      end)
-      
       begin
+        # child process
+        detective_state = 0
+        # Get an instance of class Method that can be invoked using Method#call
+        the_method, args = get_method(the_klass, method_name, class_method)
+        set_trace_func(proc do |event, file, line, id, binding, classname|
+          if id == :call
+            detective_state = 1
+            return
+          end
+          return if detective_state == 0
+          if event == 'call'
+            puts "location"
+            puts file
+            puts line
+            set_trace_func nil
+            exit!
+          elsif event == 'c-call'
+            puts 'native method'
+            set_trace_func nil
+            exit!
+          end
+        end)
+      
         the_method.call *args
         # If the next line executed, this indicates an error because the method should be cancelled before called
         puts "method called!"
@@ -146,8 +161,11 @@ private
   def self.get_method(the_klass, method_name, class_method)
     if class_method
       the_method = the_klass.method(method_name)
-    else
-      # Create a new empty initialize method to bypass initialization
+    elsif the_klass.is_a? Class
+      # Create an instance of the given class
+      # Create a new empty initialize method to bypass initialization ...
+      # because some classes require special attributes when created.
+      # Some other like ActiveRecord::Base does not allow to be instantiated at all
       the_klass.class_eval do
         alias old_initialize initialize
         def initialize
@@ -161,6 +179,11 @@ private
 #        undef initialize
         alias initialize old_initialize
       end
+    elsif the_klass.is_a? Module
+      # Crate any object and let it extends the given module
+      object = Object.new
+      object.extend the_klass
+      the_method = object.method(method_name)
     end
     # check how many attributes are required
     the_method_arity = the_method.arity

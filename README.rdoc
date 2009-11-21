@@ -52,9 +52,26 @@ Find the location of some source ...
   Detective.get_location('ActiveRecord::Base#attributes')
 
 Result
-    "location
+    location
     /home/aseldawy/.gem/ruby/1.8/gems/activerecord-2.3.4/lib/active_record/base.rb
-    2752"
+    2752
+
+(new) You can also find source code for modules ...
+  Detective.view_source('AuthenticatedSystem#current_user')
+  
+Result
+    def current_user
+      @current_user ||= (login_from_session || login_from_basic_auth || login_from_cookie) unless @current_user == false
+    end
+
+(new) You have an alternative output ...
+  Detective.view_source('AuthenticatedSystem#current_user', :rdoc)
+ 
+ Result
+    /home/aseldawy/aptana_studio/archiving_system/lib/authenticated_system.rb, line 11
+    11:    def current_user
+    12:      @current_user ||= (login_from_session || login_from_basic_auth || login_from_cookie) unless @current_user == false
+    13:    end
 
 No luck with native methods ...
   Detective.view_source('String#length')
