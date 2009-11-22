@@ -1,6 +1,6 @@
 = detective
 
-Detective is a gem build by BadrIT (http://www.badrit.com/) to investigate the ruby source code.
+Detective is a gem built by BadrIT (http://www.badrit.com/) to investigate the ruby source code.
 Check the examples below.
 
 == Motivation
