@@ -70,11 +70,6 @@ module Detective
 private
 
   def self.get_location_thread(the_klass, method_name, class_method)
-    if class_method
-      raise "Invalid class method name #{method_name} for class #{the_klass}" unless the_klass.respond_to? method_name
-    else
-      raise "Invalid instance method name #{method_name} for class #{the_klass}" unless the_klass.instance_methods.include? method_name
-    end
     result = ""
     t = Thread.new do
       begin
@@ -144,9 +139,14 @@ private
         the_method.call *args
         # If the next line executed, this indicates an error because the method should be cancelled before called
         puts "method called!"
-      rescue => e
+      rescue NoMethodError => e
+        puts "No method found #{method_name}"
+        puts e.inspect
+        puts e.backtrace.join("\n")
+      rescue Exception => e
         puts "error"
         puts e.inspect
+        puts e.backtrace.join("\n")
       ensure
         exit!
       end
@@ -175,7 +175,7 @@ private
       the_method = the_klass.new.method(method_name)
       # Revert initialize method
       the_klass.class_eval do
-        # under causes a warning
+        # undef causes a warning with :initialize
 #        undef initialize
         alias initialize old_initialize
       end
@@ -191,6 +191,17 @@ private
     
     # Return the method and its parameters
     [the_method, Array.new(required_args)]
+  rescue NameError => e
+    if method_name != 'method_missing' &&
+      (
+       class_method && the_klass.respond_to?(:method_missing) ||
+       !class_method && the_klass.instance_methods.include?('method_missing')
+      )
+      method_name = 'method_missing'
+      retry
+    else
+      raise
+    end
   end
 
 end

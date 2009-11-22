@@ -4,9 +4,21 @@ class BadrIT
   def self.hello
     puts "hello BadrIT"
   end
-end
-module IPhone; end
   
+  def hi
+    puts "hi BadrIT"
+  end
+end
+
+module IPhone
+end
+
+class SomeClass
+  def method_missing(args)
+    puts "no method called #{args}"
+  end
+end
+
 
 class TestDetective < Test::Unit::TestCase
   def test_simple_method
@@ -31,14 +43,8 @@ class TestDetective < Test::Unit::TestCase
   end
   
 	def test_instance_method
-		BadrIT.class_eval do
-			def test
-				puts "testing"
-			end
-		end
-		
-		source = Detective.view_source('BadrIT#test')
-		assert_equal 'def test puts "testing" end', source.gsub(/\s+/, ' ').strip
+		source = Detective.view_source('BadrIT#hi')
+		assert_equal 'def hi puts "hi BadrIT" end', source.gsub(/\s+/, ' ').strip
 	end
   
   def test_method_with_args
@@ -93,14 +99,9 @@ class TestDetective < Test::Unit::TestCase
   def test_using_threads
     fork_supported = Detective.const_get(:ForkSupported)
     Detective.const_set(:ForkSupported, false)
-    BadrIT.class_eval do 
-      def self.noway
-        puts "Go away"
-      end
-    end
   
-    source = Detective.view_source('BadrIT.noway')
-    assert_equal 'def self.noway puts "Go away" end', source.gsub(/\s+/, ' ').strip
+    source = Detective.view_source('BadrIT.hello')
+    assert_equal 'def self.hello puts "hello BadrIT" end', source.gsub(/\s+/, ' ').strip
 
     Detective.const_set(:ForkSupported, fork_supported)
   end
@@ -109,14 +110,10 @@ class TestDetective < Test::Unit::TestCase
     BadrIT.class_eval do 
       def initialize(arg0, arg1, arg2)
       end
-
-      def some_method
-        puts "me myself"
-      end
     end
   
-    source = Detective.view_source('BadrIT#some_method')
-    assert_equal 'def some_method puts "me myself" end', source.gsub(/\s+/, ' ').strip
+    source = Detective.view_source('BadrIT#hi')
+    assert_equal 'def hi puts "hi BadrIT" end', source.gsub(/\s+/, ' ').strip
   end
 
   def test_method_with_eval
@@ -152,5 +149,35 @@ class TestDetective < Test::Unit::TestCase
   def test_rdoc_format
     source = Detective.view_source('BadrIT.hello', :rdoc)
     assert_equal "#{__FILE__}, line 4 4: def self.hello 5: puts \"hello BadrIT\" 6: end", source.gsub(/\s+/, ' ').strip
+  end
+  
+  def test_should_find_private_methods
+    BadrIT.class_eval do
+      private
+      def hidden_method
+        puts "secret"
+      end
+    end
+    source = Detective.view_source('BadrIT#hidden_method')
+    assert_equal 'def hidden_method puts "secret" end', source.gsub(/\s+/, ' ').strip
+  end
+  
+  def test_should_find_private_class_methods
+    BadrIT.class_eval do
+      class << self
+        def hidden_method
+          puts "secret"
+        end
+        
+        private :hidden_method
+      end
+    end
+    source = Detective.view_source('BadrIT.hidden_method')
+    assert_equal 'def hidden_method puts "secret" end', source.gsub(/\s+/, ' ').strip
+  end
+  
+  def test_method_missing
+    source = Detective.view_source('SomeClass#habal')
+    assert_equal 'def method_missing(args) puts "no method called #{args}" end', source.gsub(/\s+/, ' ').strip
   end
 end
